@@ -1,6 +1,6 @@
 CREATE TABLE address (
                          id bigserial NOT NULL,
-                         contry varchar(255),
+                         country varchar(255),
                          region varchar(255),
                          city varchar(255),
                          street varchar(255),
@@ -27,5 +27,3 @@ CREATE TABLE customer (
                               address(id) ON UPDATE RESTRICT ON DELETE RESTRICT
 );
 
-INSERT INTO address (id,contry, region, city, street, house, flat, created, modified)
- values (1,'Russia','SFO','Novosibirsk','Pushkina','25','15','12-01-2021','13-01-2021');
