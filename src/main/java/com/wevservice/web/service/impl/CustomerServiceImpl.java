@@ -1,51 +1,48 @@
 package com.wevservice.web.service.impl;
 
+import com.wevservice.web.exception.ExistingCustomerException;
 import com.wevservice.web.exception.InvalidInputDataException;
 import com.wevservice.web.exception.NoDataFoundException;
 import com.wevservice.web.model.Address;
 import com.wevservice.web.model.Customer;
-import com.wevservice.web.params.AddressForUser;
 import com.wevservice.web.params.NewCustomerParams;
-import com.wevservice.web.repository.AddressRepository;
 import com.wevservice.web.repository.CustomerRepository;
+import com.wevservice.web.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
-import com.wevservice.web.service.CustomerService;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
-    private final AddressRepository addressRepository;
 
     @Autowired
-    public CustomerServiceImpl(CustomerRepository customerRepository, AddressRepository addressRepository) {
+    public CustomerServiceImpl(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
-        this.addressRepository = addressRepository;
     }
 
-    //в будующем возможно доделать связь для адреса чтобы можно было искать
-    //текущего владельца адреса и текущего человека каоторый там зарегестрирован
     @Override
     public Customer create(NewCustomerParams customerParams, Address actualAddress, Address registryAddress) {
         Customer customer = null;
         if (checkCustomerInputParams(customerParams)) {
-            customer = findInDatabaseOrCreate(customerParams);
+            //create new customer or throw new exception if customer already exist
+            customer = checkInDatabaseOrCreate(customerParams);
         }
+        //assign addresses for new customer
         customer.setActualAddress(actualAddress);
         customer.setRegisterAddress(registryAddress);
 
         return customerRepository.save(customer);
     }
 
-    private Customer findInDatabaseOrCreate(NewCustomerParams params) {
+    private Customer checkInDatabaseOrCreate(NewCustomerParams params) {
+        //create new customer based on input parameters
         Customer customer = buildCustomer(params);
-        Optional<Customer> fromDatabase = customerRepository.findOne(Example.of(customer));
-        if (fromDatabase.isPresent()) {
-            customer = fromDatabase.get();
+        //if customer is present in database throws exception
+        if (customerRepository.exists(Example.of(customer))) {
+            throw new ExistingCustomerException("This customer already exist");
         }
         return customer;
     }
@@ -61,6 +58,7 @@ public class CustomerServiceImpl implements CustomerService {
 
 
     private boolean checkCustomerInputParams(NewCustomerParams params) {
+        //validate input parameters for customer
         if (!params.firstName.isBlank() && !params.lastName.isBlank()
                 && !params.middleName.isBlank() && (params.sex != null && !params.sex.equals(""))
         ) return true;
@@ -77,11 +75,15 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public Customer updateCustomerActualAddress(Address address, Long customerId) {
-        Customer customer = customerRepository.findById(customerId).get();
+        Optional<Customer> optionalCustomer = customerRepository.findById(customerId);
+        Customer customer = null;
+        //if customer exist do update else throw exception
+        if (optionalCustomer.isPresent()) {
+            customer = optionalCustomer.get();
+        } else throw new NoDataFoundException("Nothing was found");
         customer.setActualAddress(address);
-        customerRepository.save(customer);
 
-        return customer;
+        return customerRepository.save(customer);
     }
 
 }

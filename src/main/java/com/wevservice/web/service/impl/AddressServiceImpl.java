@@ -10,7 +10,6 @@ import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class AddressServiceImpl implements AddressService {
@@ -25,16 +24,21 @@ public class AddressServiceImpl implements AddressService {
     public Address save(AddressForUser actualAddress) {
         Address address = null;
         if (checkCustomerAddress(actualAddress)) {
+            //check address in database
+            //if present retrieves address from database with existing id
+            //if  doesn't present it will be created without id
             address = findInDatabaseOrCreate(actualAddress);
         }
-        Address savedAddress = addressRepository.save(address);
-        return savedAddress;
+        if (address.getId()==null) return  addressRepository.save(address);
+        else return address;
     }
 
     @Override
     public void deleteUnusedAddress() {
+        //get all address without customers
         List<Address> addressWithoutCustomers = addressRepository.getAddressesWithoutCustomer();
-        if (addressWithoutCustomers.size()>0) {
+        if (addressWithoutCustomers.size() > 0) {
+            //iterate by list and removing element from database
             for (Address a : addressWithoutCustomers) {
                 addressRepository.deleteById(a.getId());
             }
@@ -56,15 +60,17 @@ public class AddressServiceImpl implements AddressService {
     private Address findInDatabaseOrCreate(AddressForUser address) {
 
         Address newAddress = buildNewAddressForCustomer(address);
-        Optional<Address> addressFromBd = addressRepository.findOne(Example.of(newAddress));
-        if (addressFromBd.isPresent()) {
-            newAddress = addressFromBd.get();
+        //if database already exist present address
+        //this address will be retrieved with it's id
+        if (addressRepository.exists(Example.of(newAddress))) {
+            newAddress = addressRepository.findOne(Example.of(newAddress)).get();
         }
         return newAddress;
 
     }
 
     private boolean checkCustomerAddress(AddressForUser params) {
+        //validate input parameters for address
         if (params.country.isBlank() || params.region.isBlank() || params.city.isBlank()
                 || params.street.isBlank() || params.house.isBlank() || params.house.isBlank()
         ) throw new InvalidInputDataException("Address's fields must be not empty");

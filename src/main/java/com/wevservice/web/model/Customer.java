@@ -10,12 +10,13 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString
 @EqualsAndHashCode
 @Entity
 @Table(name = "customer")
 public class Customer {
-    @Setter(AccessLevel.NONE)
     @Id
+    //uses generator from database
     @SequenceGenerator(name = "customer_id_seq",sequenceName ="customer_id_seq",initialValue = 10,allocationSize = 1)
     @GeneratedValue(generator ="customer_id_seq",strategy = GenerationType.SEQUENCE)
     private Long id;

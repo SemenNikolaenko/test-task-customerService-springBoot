@@ -23,17 +23,19 @@ public class CustomerController {
         this.addressService = addressService;
     }
 
-    @PostMapping()
+    @PostMapping("/customer")
     public ResponseEntity<Customer> createNewCustomer(
             @RequestBody InputParamsForCreatingCustomer params
     ) {
+        //Before creating customer we have to create or get from database addresses
         Address actualAddress = addressService.save(params.actualAddress);
         Address registryAddress = addressService.save(params.registryAddress);
+        //After getting addresses we can assign it to new customer
         Customer customer = customerService.create(params.customer, actualAddress, registryAddress);
         return new ResponseEntity<>(customer, HttpStatus.OK);
     }
 
-    @GetMapping("/customer")
+    @GetMapping
     public ResponseEntity<Customer> getCustomersByLastAndFirstName(@RequestParam String firstName,
                                                                          @RequestParam String lastName) {
         Customer customers = customerService.getByFirstNameAndLastName(firstName, lastName);
@@ -42,8 +44,11 @@ public class CustomerController {
     @PutMapping("/{id}")
     public ResponseEntity<Customer> updateActualAddress(@RequestBody AddressForUser address,
                                                         @PathVariable("id") Long customerId){
+        //if address presents in database, it will be received
+        //if address don't present it will be created
         Address presentActualAddress = addressService.save(address);
         Customer updatedCustomer = customerService.updateCustomerActualAddress(presentActualAddress, customerId);
+        //after all action from database will be deleted all addresses without customers
         addressService.deleteUnusedAddress();
         return new ResponseEntity<>(updatedCustomer,HttpStatus.OK);
     }

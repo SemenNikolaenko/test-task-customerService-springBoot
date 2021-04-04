@@ -15,4 +15,8 @@ public class ExceptionController {
     public ResponseEntity handleNoData(NoDataFoundException e){
         return new ResponseEntity(e.getMessage(),HttpStatus.NO_CONTENT);
     }
+    @ExceptionHandler(ExistingCustomerException.class)
+    public ResponseEntity handleExistCustomerException(ExistingCustomerException e){
+        return new ResponseEntity(e.getMessage(),HttpStatus.BAD_REQUEST);
+    }
 }
